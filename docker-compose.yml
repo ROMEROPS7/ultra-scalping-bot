@@ -1,0 +1,51 @@
+# Ultra Scalping Bot - Docker Compose
+# Run: docker-compose up -d
+# Logs: docker-compose logs -f bot
+
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    container_name: ultra-scalping-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./logs:/app/logs
+    environment:
+      - TZ=UTC
+    command: ["--mode", "paper"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backtester:
+    build: .
+    container_name: ultra-scalping-backtester
+    profiles:
+      - tools
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+    entrypoint: ["python", "run_backtest.py"]
+    command: ["--symbol", "BTC/USDT:USDT", "--days", "30", "--compare"]
+
+  optimizer:
+    build: .
+    container_name: ultra-scalping-optimizer
+    profiles:
+      - tools
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    entrypoint: ["python", "run_optimizer.py"]
+    command: ["--symbol", "BTC/USDT:USDT", "--days", "30", "--iterations", "100"]
